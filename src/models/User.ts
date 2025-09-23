@@ -1,15 +1,20 @@
 // user.model.ts
-import mongoose, { Schema, model, Document } from "mongoose";
+import mongoose, { Schema, model, Document, Types } from "mongoose";
 
-interface IUser extends Document {
-  username: string;
+export interface IUser extends Document {
+  _id: Types.ObjectId;
+  cpf: string;
+  completeName: string;
   email: string;
+  phone: string;
   password: string;
 }
 
 const userSchema = new mongoose.Schema<IUser>({
-  username: { type: String, required: true },
+  cpf: { type: String, required: true },
+  completeName: { type: String, required: true, unique: true },
   email: { type: String, required: true, unique: true },
+  phone: { type: String, required: true, unique: true },
   password: { type: String, required: true },
 });
 

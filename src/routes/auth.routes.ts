@@ -3,16 +3,23 @@ const router = express.Router();
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import User from "../models/User";
-
 // Cadastro
 interface RegisterRequestBody {
-  username: string;
+  cpf: string;
+  completeName: string;
+  phone: string;
   email: string;
   password: string;
 }
 
 interface RegisterResponse {
+  token?: string;
   message?: string;
+  user?: {
+    id: string;
+    completeName: string;
+    email: string;
+  };
   error?: string;
 }
 
@@ -22,18 +29,40 @@ router.post(
     req: Request<unknown, unknown, RegisterRequestBody>,
     res: Response<RegisterResponse>
   ) => {
-    const { username, email, password } = req.body;
+    const { cpf, completeName, email, phone, password } = req.body;
 
     try {
       const userExists = await User.findOne({ email });
-
       if (userExists)
         return res.status(400).json({ error: "Email já cadastrado." });
 
       const hashedPassword = await bcrypt.hash(password, 10);
-      const newUser = new User({ username, email, password: hashedPassword });
-      await newUser.save();
-      res.status(201).send({ message: "Usuário criado com sucesso!" });
+
+      const newUser = new User({
+        cpf,
+        completeName,
+        phone,
+        email,
+        password: hashedPassword,
+      });
+
+      const user = await newUser.save();
+
+      const token = jwt.sign(
+        { id: user._id, name: user.completeName, email: user.email },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1d" }
+      );
+
+      res.status(201).json({
+        token,
+        message: "Usuário registrado com sucesso.",
+        user: {
+          id: user._id.toString(),
+          completeName: user.completeName,
+          email: user.email,
+        },
+      });
     } catch (error: any) {
       res.status(500).send({ error: error.message });
     }
@@ -62,28 +91,19 @@ router.post(
 
     try {
       const user = await User.findOne({ email });
-
-      if (!user)
-        return res.status(400).send({ message: "Email não cadastrado." });
-
-      const match = await bcrypt.compare(password, user.password);
-
-      if (!match) return res.status(400).send({ message: "Senha incorreta." });
-
-      if (!process.env.JWT_SECRET) {
-        throw new Error("JWT_SECRET is not defined in environment variables.");
+      if (!user || !(await bcrypt.compare(password, user.password))) {
+        return res.status(401).json({ message: "Credenciais inválidas." });
       }
+
       const token = jwt.sign(
-        { id: user._id, name: user.username, email: user.email },
-        process.env.JWT_SECRET as string,
-        {
-          expiresIn: "1d",
-        }
+        { id: user._id, name: user.completeName, email: user.email },
+        process.env.JWT_SECRET!,
+        { expiresIn: "1d" }
       );
 
       res.status(200).json({ token });
     } catch (error: any) {
-      res.status(400).send({ error: error.message });
+      res.status(500).send({ error: error.message });
     }
   }
 );
