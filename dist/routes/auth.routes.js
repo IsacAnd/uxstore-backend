@@ -9,15 +9,30 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const User_1 = __importDefault(require("../models/User"));
 router.post("/register", async (req, res) => {
-    const { username, email, password } = req.body;
+    const { cpf, completeName, email, phone, password } = req.body;
     try {
         const userExists = await User_1.default.findOne({ email });
         if (userExists)
             return res.status(400).json({ error: "Email já cadastrado." });
         const hashedPassword = await bcryptjs_1.default.hash(password, 10);
-        const newUser = new User_1.default({ username, email, password: hashedPassword });
-        await newUser.save();
-        res.status(201).send({ message: "Usuário criado com sucesso!" });
+        const newUser = new User_1.default({
+            cpf,
+            completeName,
+            phone,
+            email,
+            password: hashedPassword,
+        });
+        const user = await newUser.save();
+        const token = jsonwebtoken_1.default.sign({ id: user._id, name: user.completeName, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
+        res.status(201).json({
+            token,
+            message: "Usuário registrado com sucesso.",
+            user: {
+                id: user._id.toString(),
+                completeName: user.completeName,
+                email: user.email,
+            },
+        });
     }
     catch (error) {
         res.status(500).send({ error: error.message });
@@ -27,21 +42,14 @@ router.post("/login", async (req, res) => {
     const { email, password } = req.body;
     try {
         const user = await User_1.default.findOne({ email });
-        if (!user)
-            return res.status(400).send({ message: "Email não cadastrado." });
-        const match = await bcryptjs_1.default.compare(password, user.password);
-        if (!match)
-            return res.status(400).send({ message: "Senha incorreta." });
-        if (!process.env.JWT_SECRET) {
-            throw new Error("JWT_SECRET is not defined in environment variables.");
+        if (!user || !(await bcryptjs_1.default.compare(password, user.password))) {
+            return res.status(401).json({ message: "Credenciais inválidas." });
         }
-        const token = jsonwebtoken_1.default.sign({ id: user._id, name: user.username, email: user.email }, process.env.JWT_SECRET, {
-            expiresIn: "1d",
-        });
+        const token = jsonwebtoken_1.default.sign({ id: user._id, name: user.completeName, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
         res.status(200).json({ token });
     }
     catch (error) {
-        res.status(400).send({ error: error.message });
+        res.status(500).send({ error: error.message });
     }
 });
 exports.default = router;
