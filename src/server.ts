@@ -5,7 +5,7 @@ import express from "express";
 import connectDatabase from "./config/db";
 import cors from "cors";
 
-import transactionRoutes from "./routes/transactions.routes";
+import transactionRoutes from "./routes/products.routes";
 import authRoutes from "./routes/auth.routes";
 import { Request, Response } from "express";
 

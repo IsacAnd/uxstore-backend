@@ -1,6 +1,6 @@
 // src/routes/transaction.routes.ts
 import express, { Request, Response } from "express";
-import Transaction, { ITransaction } from "../models/Transaction";
+import Transaction, { ITransaction } from "../models/Product";
 import authMiddleware from "../middleware/authMiddleware";
 
 const router = express.Router();
