@@ -46,7 +46,15 @@ router.post("/login", async (req, res) => {
             return res.status(401).json({ message: "Credenciais inválidas." });
         }
         const token = jsonwebtoken_1.default.sign({ id: user._id, name: user.completeName, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1d" });
-        res.status(200).json({ token });
+        res.status(200).json({
+            token,
+            message: "Usuário logado com sucesso.",
+            user: {
+                id: user._id.toString(),
+                completeName: user.completeName,
+                email: user.email,
+            },
+        });
     }
     catch (error) {
         res.status(500).send({ error: error.message });
