@@ -1,16 +1,14 @@
 import { Schema, model, Document, Types } from "mongoose";
 
-export interface ITransaction extends Document {
+export interface IProduct extends Document {
   title: string;
   description?: string;
+  value: number;
   amount: number;
-  type: "income" | "expense";
-  registerDate: Date;
-  transactionDate: Date;
   user: Types.ObjectId;
 }
 
-const TransactionSchema = new Schema<ITransaction>({
+const TransactionSchema = new Schema<IProduct>({
   title: {
     type: String,
     required: true,
@@ -19,21 +17,12 @@ const TransactionSchema = new Schema<ITransaction>({
     type: String,
     required: false,
   },
+  value: {
+    type: Number,
+    required: false,
+  },
   amount: {
     type: Number,
-    required: true,
-  },
-  type: {
-    type: String,
-    enum: ["income", "expense"],
-    required: true,
-  },
-  registerDate: {
-    type: Date,
-    default: Date.now,
-  },
-  transactionDate: {
-    type: Date,
     required: true,
   },
   user: {
@@ -43,6 +32,6 @@ const TransactionSchema = new Schema<ITransaction>({
   },
 });
 
-const Transaction = model<ITransaction>("TransactioN", TransactionSchema);
+const Product = model<IProduct>("Product", TransactionSchema);
 
-export default Transaction;
+export default Product;

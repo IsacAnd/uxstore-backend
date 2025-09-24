@@ -10,13 +10,13 @@ const authMiddleware_1 = __importDefault(require("../middleware/authMiddleware")
 const router = express_1.default.Router();
 // middleware para proteção de rotas
 router.use(authMiddleware_1.default);
-// Buscar todas as transações
+// Buscar todos os produtos
 router.get("/", async (req, res) => {
     try {
-        const transactions = await Product_1.default.find({ user: req.userId }).sort({
+        const products = await Product_1.default.find({ user: req.userId }).sort({
             transactionDate: -1,
         });
-        res.status(200).json(transactions);
+        res.status(200).json(products);
     }
     catch (error) {
         res.status(500).json({ message: error.message });
@@ -37,38 +37,21 @@ router.delete("/:id", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-// Criar uma transação
+// Criar um produto
 router.post("/", async (req, res) => {
     try {
-        const { title, description, amount, transactionDate, type } = req.body;
-        const newTransaction = new Product_1.default({
+        const { title, description, amount, value } = req.body;
+        const newProduct = new Product_1.default({
             title,
             description,
             amount,
-            transactionDate,
-            type,
+            value,
             user: req.userId,
         });
-        await newTransaction.save();
-        res.status(201).json(newTransaction);
-    }
-    catch (error) {
-        res.status(400).json({ message: error.message });
-    }
-});
-// Calcular balance
-router.get("/balance", async (req, res) => {
-    try {
-        const userTransactions = await Product_1.default.find({ user: req.userId });
-        const balance = userTransactions.reduce((acc, transaction) => {
-            if (transaction.type === "income")
-                acc.income += transaction.amount;
-            else if (transaction.type === "expense")
-                acc.expense += transaction.amount;
-            acc.total = acc.income - acc.expense;
-            return acc;
-        }, { income: 0, expense: 0, total: 0 });
-        res.status(200).json(balance);
+        await newProduct.save();
+        res.status(201).json({
+            message: "Produto criado com sucesso!",
+        });
     }
     catch (error) {
         res.status(400).json({ message: error.message });

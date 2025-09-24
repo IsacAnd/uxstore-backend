@@ -1,6 +1,6 @@
 // src/routes/transaction.routes.ts
 import express, { Request, Response } from "express";
-import Transaction, { ITransaction } from "../models/Product";
+import Product, { IProduct } from "../models/Product";
 import authMiddleware from "../middleware/authMiddleware";
 
 const router = express.Router();
@@ -13,18 +13,18 @@ interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
-// Buscar todas as transações
+// Buscar todos os produtos
 router.get(
   "/",
   async (
     req: AuthenticatedRequest,
-    res: Response<ITransaction[] | { message: string }>
+    res: Response<IProduct[] | { message: string }>
   ) => {
     try {
-      const transactions = await Transaction.find({ user: req.userId }).sort({
+      const products = await Product.find({ user: req.userId }).sort({
         transactionDate: -1,
       });
-      res.status(200).json(transactions);
+      res.status(200).json(products);
     } catch (error: any) {
       res.status(500).json({ message: error.message });
     }
@@ -39,7 +39,7 @@ router.delete(
     res: Response<{ message?: string; error?: string }>
   ) => {
     try {
-      const deleted = await Transaction.findOneAndDelete({
+      const deleted = await Product.findOneAndDelete({
         _id: req.params.id,
         user: req.userId,
       });
@@ -54,58 +54,28 @@ router.delete(
   }
 );
 
-// Criar uma transação
+// Criar um produto
 router.post(
   "/",
   async (
-    req: AuthenticatedRequest & { body: Omit<ITransaction, "_id" | "user"> },
-    res: Response<ITransaction | { message: string }>
+    req: AuthenticatedRequest & { body: Omit<IProduct, "_id" | "user"> },
+    res: Response<IProduct | { message: string }>
   ) => {
     try {
-      const { title, description, amount, transactionDate, type } = req.body;
+      const { title, description, amount, value } = req.body;
 
-      const newTransaction = new Transaction({
+      const newProduct = new Product({
         title,
         description,
         amount,
-        transactionDate,
-        type,
+        value,
         user: req.userId,
       });
 
-      await newTransaction.save();
-      res.status(201).json(newTransaction);
-    } catch (error: any) {
-      res.status(400).json({ message: error.message });
-    }
-  }
-);
-
-// Calcular balance
-router.get(
-  "/balance",
-  async (
-    req: AuthenticatedRequest,
-    res: Response<
-      { income: number; expense: number; total: number } | { message: string }
-    >
-  ) => {
-    try {
-      const userTransactions = await Transaction.find({ user: req.userId });
-
-      const balance = userTransactions.reduce(
-        (acc, transaction) => {
-          if (transaction.type === "income") acc.income += transaction.amount;
-          else if (transaction.type === "expense")
-            acc.expense += transaction.amount;
-
-          acc.total = acc.income - acc.expense;
-          return acc;
-        },
-        { income: 0, expense: 0, total: 0 }
-      );
-
-      res.status(200).json(balance);
+      await newProduct.save();
+      res.status(201).json({
+        message: "Produto criado com sucesso!",
+      });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

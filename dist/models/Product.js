@@ -10,21 +10,12 @@ const TransactionSchema = new mongoose_1.Schema({
         type: String,
         required: false,
     },
+    value: {
+        type: Number,
+        required: false,
+    },
     amount: {
         type: Number,
-        required: true,
-    },
-    type: {
-        type: String,
-        enum: ["income", "expense"],
-        required: true,
-    },
-    registerDate: {
-        type: Date,
-        default: Date.now,
-    },
-    transactionDate: {
-        type: Date,
         required: true,
     },
     user: {
@@ -33,5 +24,5 @@ const TransactionSchema = new mongoose_1.Schema({
         required: true,
     },
 });
-const Transaction = (0, mongoose_1.model)("TransactioN", TransactionSchema);
-exports.default = Transaction;
+const Product = (0, mongoose_1.model)("Product", TransactionSchema);
+exports.default = Product;
