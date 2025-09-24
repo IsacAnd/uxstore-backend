@@ -78,6 +78,11 @@ interface LoginRequestBody {
 interface LoginResponse {
   token?: string;
   message?: string;
+  user?: {
+    id: string;
+    completeName: string;
+    email: string;
+  };
   error?: string;
 }
 
@@ -101,7 +106,15 @@ router.post(
         { expiresIn: "1d" }
       );
 
-      res.status(200).json({ token });
+      res.status(200).json({
+        token,
+        message: "Usuário logado com sucesso.",
+        user: {
+          id: user._id.toString(),
+          completeName: user.completeName,
+          email: user.email,
+        },
+      });
     } catch (error: any) {
       res.status(500).send({ error: error.message });
     }
