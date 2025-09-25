@@ -1,12 +1,18 @@
 import admin from "firebase-admin";
 
-// Lê o JSON do Firebase a partir da variável de ambiente
-const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG!);
-
 if (!admin.apps.length) {
+  if (!process.env.FIREBASE_CONFIG) {
+    throw new Error("FIREBASE_CONFIG não definido no ambiente");
+  }
+
+  const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+
+  // Corrige as quebras de linha da private_key
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET, // ex: "meu-bucket.appspot.com"
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
   });
 }
 
