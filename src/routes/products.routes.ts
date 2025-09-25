@@ -1,6 +1,6 @@
 // src/routes/transaction.routes.ts
-const jwt = require("jsonwebtoken");
 import express, { Request, Response } from "express";
+import jwt from "jsonwebtoken";
 import Product, { IProduct } from "../models/Product";
 import authMiddleware from "../middleware/authMiddleware";
 import { upload } from "../middleware/upload";
@@ -8,15 +8,31 @@ import { bucket } from "../firebase";
 
 const router = express.Router();
 
-// middleware para proteção de rotas
+// -------------------------------
+// Middleware de autenticação
+// -------------------------------
 router.use(authMiddleware);
 
-// Tipagem para requisição autenticada
+// -------------------------------
+// Tipagens
+// -------------------------------
 interface AuthenticatedRequest extends Request {
   userId?: string;
 }
 
-// Buscar todos os produtos
+interface ProductRequest extends Request {
+  file?: Express.Multer.File;
+  body: {
+    title: string;
+    description: string;
+    amount: string;
+    value: string;
+  };
+}
+
+// -------------------------------
+// Rota: Buscar todos os produtos (JSON)
+// -------------------------------
 router.get(
   "/",
   async (
@@ -34,7 +50,9 @@ router.get(
   }
 );
 
-// Deletar uma transação por id
+// -------------------------------
+// Rota: Deletar produto
+// -------------------------------
 router.delete(
   "/:id",
   async (
@@ -48,30 +66,30 @@ router.delete(
       });
 
       if (!deleted)
-        return res.status(404).json({ error: "Transação não encontrada." });
+        return res.status(404).json({ error: "Produto não encontrado." });
 
-      res.status(200).json({ message: "Transação deletada com sucesso." });
+      res.status(200).json({ message: "Produto deletado com sucesso." });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }
   }
 );
 
-// Criar um produto
+// -------------------------------
+// Rota: Criar produto com imagem
+// -------------------------------
+// ⚠️ NÃO usar express.json() aqui, Multer processa o FormData
 router.post(
   "/",
   upload.single("image"),
-  async (req: Request, res: Response) => {
+  async (req: ProductRequest, res: Response) => {
     try {
       const { title, description, amount, value } = req.body;
-      const token = req.header("Authorization")?.replace("Bearer ", "");
-      if (!token) return res.status(401).json({ message: "Token ausente" });
 
-      const decoded = jwt.verify(
-        token,
-        process.env.JWT_SECRET as string
-      ) as any;
-      const userId = decoded.id;
+      // Pegar userId do middleware de autenticação
+      const userId = (req as any).userId;
+      if (!userId)
+        return res.status(401).json({ message: "Usuário não autenticado" });
 
       let imageUrl: string | undefined;
 
@@ -83,7 +101,7 @@ router.post(
           metadata: { contentType: req.file.mimetype },
         });
 
-        await file.makePublic(); // deixa público
+        await file.makePublic();
         imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
       }
 
