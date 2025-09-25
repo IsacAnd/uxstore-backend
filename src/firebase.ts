@@ -1,15 +1,12 @@
 import admin from "firebase-admin";
-import path from "path";
 
-const serviceAccount = require(path.join(
-  __dirname,
-  "../config/serviceAccountKey.json"
-));
+// Lê o JSON do Firebase a partir da variável de ambiente
+const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG!);
 
 if (!admin.apps.length) {
   admin.initializeApp({
     credential: admin.credential.cert(serviceAccount),
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+    storageBucket: process.env.FIREBASE_STORAGE_BUCKET, // ex: "meu-bucket.appspot.com"
   });
 }
 
