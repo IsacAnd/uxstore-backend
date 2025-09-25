@@ -3,7 +3,8 @@ const jwt = require("jsonwebtoken");
 import express, { Request, Response } from "express";
 import Product, { IProduct } from "../models/Product";
 import authMiddleware from "../middleware/authMiddleware";
-import { JwtPayload } from "jsonwebtoken";
+import { upload } from "../middleware/upload";
+import { bucket } from "../firebase";
 
 const router = express.Router();
 
@@ -59,32 +60,46 @@ router.delete(
 // Criar um produto
 router.post(
   "/",
-  async (
-    req: AuthenticatedRequest & { body: Omit<IProduct, "_id" | "user"> },
-    res: Response<IProduct | { message: string }>
-  ) => {
+  upload.single("image"),
+  async (req: Request, res: Response) => {
     try {
       const { title, description, amount, value } = req.body;
       const token = req.header("Authorization")?.replace("Bearer ", "");
+      if (!token) return res.status(401).json({ message: "Token ausente" });
 
       const decoded = jwt.verify(
         token,
         process.env.JWT_SECRET as string
-      ) as JwtPayload & { id: string };
-      req.userId = decoded.id;
+      ) as any;
+      const userId = decoded.id;
+
+      let imageUrl: string | undefined;
+
+      if (req.file) {
+        const fileName = `products/${Date.now()}-${req.file.originalname}`;
+        const file = bucket.file(fileName);
+
+        await file.save(req.file.buffer, {
+          metadata: { contentType: req.file.mimetype },
+        });
+
+        await file.makePublic(); // deixa público
+        imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
+      }
 
       const newProduct = new Product({
         title,
         description,
-        amount,
-        value,
-        user: req.userId,
+        amount: Number(amount),
+        value: Number(value),
+        user: userId,
+        image: imageUrl,
       });
 
       await newProduct.save();
-      res.status(201).json({
-        message: "Produto criado com sucesso!",
-      });
+      res
+        .status(201)
+        .json({ message: "Produto criado com sucesso!", product: newProduct });
     } catch (error: any) {
       res.status(400).json({ message: error.message });
     }

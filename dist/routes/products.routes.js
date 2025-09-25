@@ -8,6 +8,8 @@ const jwt = require("jsonwebtoken");
 const express_1 = __importDefault(require("express"));
 const Product_1 = __importDefault(require("../models/Product"));
 const authMiddleware_1 = __importDefault(require("../middleware/authMiddleware"));
+const upload_1 = require("../middleware/upload");
+const firebase_1 = require("../firebase");
 const router = express_1.default.Router();
 // middleware para proteção de rotas
 router.use(authMiddleware_1.default);
@@ -39,23 +41,36 @@ router.delete("/:id", async (req, res) => {
     }
 });
 // Criar um produto
-router.post("/", async (req, res) => {
+router.post("/", upload_1.upload.single("image"), async (req, res) => {
     try {
         const { title, description, amount, value } = req.body;
         const token = req.header("Authorization")?.replace("Bearer ", "");
+        if (!token)
+            return res.status(401).json({ message: "Token ausente" });
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        req.userId = decoded.id;
+        const userId = decoded.id;
+        let imageUrl;
+        if (req.file) {
+            const fileName = `products/${Date.now()}-${req.file.originalname}`;
+            const file = firebase_1.bucket.file(fileName);
+            await file.save(req.file.buffer, {
+                metadata: { contentType: req.file.mimetype },
+            });
+            await file.makePublic(); // deixa público
+            imageUrl = `https://storage.googleapis.com/${firebase_1.bucket.name}/${fileName}`;
+        }
         const newProduct = new Product_1.default({
             title,
             description,
-            amount,
-            value,
-            user: req.userId,
+            amount: Number(amount),
+            value: Number(value),
+            user: userId,
+            image: imageUrl,
         });
         await newProduct.save();
-        res.status(201).json({
-            message: "Produto criado com sucesso!",
-        });
+        res
+            .status(201)
+            .json({ message: "Produto criado com sucesso!", product: newProduct });
     }
     catch (error) {
         res.status(400).json({ message: error.message });

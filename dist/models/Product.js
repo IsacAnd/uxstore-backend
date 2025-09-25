@@ -23,6 +23,7 @@ const TransactionSchema = new mongoose_1.Schema({
         ref: "User",
         required: true,
     },
+    image: { type: String },
 });
 const Product = (0, mongoose_1.model)("Product", TransactionSchema);
 exports.default = Product;

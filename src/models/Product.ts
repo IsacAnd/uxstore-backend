@@ -6,6 +6,7 @@ export interface IProduct extends Document {
   value: number;
   amount: number;
   user: Types.ObjectId;
+  image?: string;
 }
 
 const TransactionSchema = new Schema<IProduct>({
@@ -30,6 +31,7 @@ const TransactionSchema = new Schema<IProduct>({
     ref: "User",
     required: true,
   },
+  image: { type: String },
 });
 
 const Product = model<IProduct>("Product", TransactionSchema);
