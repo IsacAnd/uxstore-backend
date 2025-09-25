@@ -31,18 +31,34 @@ interface ProductRequest extends Request {
 }
 
 // -------------------------------
-// Rota: Buscar todos os produtos (JSON)
+// Rota: Buscar todos os produtos por usuário
 // -------------------------------
 router.get(
-  "/",
+  "/getAllProductsByUser",
   async (
     req: AuthenticatedRequest,
     res: Response<IProduct[] | { message: string }>
   ) => {
     try {
-      const products = await Product.find({ user: req.userId }).sort({
-        transactionDate: -1,
-      });
+      const products = await Product.find({ user: req.userId });
+      res.status(200).json(products);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// -------------------------------
+// Rota: Buscar todos os produtos
+// -------------------------------
+router.get(
+  "/getAll",
+  async (
+    req: AuthenticatedRequest,
+    res: Response<IProduct[] | { message: string }>
+  ) => {
+    try {
+      const products = await Product.find({});
       res.status(200).json(products);
     } catch (error: any) {
       res.status(500).json({ message: error.message });

@@ -15,13 +15,23 @@ const router = express_1.default.Router();
 // -------------------------------
 router.use(authMiddleware_1.default);
 // -------------------------------
-// Rota: Buscar todos os produtos (JSON)
+// Rota: Buscar todos os produtos por usuário
 // -------------------------------
-router.get("/", async (req, res) => {
+router.get("/getAllProductsByUser", async (req, res) => {
     try {
-        const products = await Product_1.default.find({ user: req.userId }).sort({
-            transactionDate: -1,
-        });
+        const products = await Product_1.default.find({ user: req.userId });
+        res.status(200).json(products);
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+// -------------------------------
+// Rota: Buscar todos os produtos
+// -------------------------------
+router.get("/getAll", async (req, res) => {
+    try {
+        const products = await Product_1.default.find({});
         res.status(200).json(products);
     }
     catch (error) {
