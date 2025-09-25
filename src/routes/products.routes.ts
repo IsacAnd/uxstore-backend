@@ -1,7 +1,9 @@
 // src/routes/transaction.routes.ts
+const jwt = require("jsonwebtoken");
 import express, { Request, Response } from "express";
 import Product, { IProduct } from "../models/Product";
 import authMiddleware from "../middleware/authMiddleware";
+import { JwtPayload } from "jsonwebtoken";
 
 const router = express.Router();
 
@@ -63,6 +65,13 @@ router.post(
   ) => {
     try {
       const { title, description, amount, value } = req.body;
+      const token = req.header("Authorization")?.replace("Bearer ", "");
+
+      const decoded = jwt.verify(
+        token,
+        process.env.JWT_SECRET as string
+      ) as JwtPayload & { id: string };
+      req.userId = decoded.id;
 
       const newProduct = new Product({
         title,

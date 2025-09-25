@@ -4,6 +4,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 // src/routes/transaction.routes.ts
+const jwt = require("jsonwebtoken");
 const express_1 = __importDefault(require("express"));
 const Product_1 = __importDefault(require("../models/Product"));
 const authMiddleware_1 = __importDefault(require("../middleware/authMiddleware"));
@@ -41,6 +42,9 @@ router.delete("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
     try {
         const { title, description, amount, value } = req.body;
+        const token = req.header("Authorization")?.replace("Bearer ", "");
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.userId = decoded.id;
         const newProduct = new Product_1.default({
             title,
             description,
