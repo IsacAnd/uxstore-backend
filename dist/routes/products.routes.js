@@ -41,7 +41,7 @@ router.get("/getAll", async (req, res) => {
 // -------------------------------
 // Rota: Deletar produto
 // -------------------------------
-router.delete("/:id", async (req, res) => {
+router.delete("/delete/:id", async (req, res) => {
     try {
         const deleted = await Product_1.default.findOneAndDelete({
             _id: req.params.id,
@@ -58,14 +58,39 @@ router.delete("/:id", async (req, res) => {
 // -------------------------------
 // Rota: Criar produto com imagem
 // -------------------------------
-// ⚠️ NÃO usar express.json() aqui, Multer processa o FormData
-router.post("/", upload_1.upload.single("image"), async (req, res) => {
+router.post("/createProduct", upload_1.upload.single("image"), async (req, res) => {
     try {
         const { title, description, amount, value } = req.body;
-        // Pegar userId do middleware de autenticação
         const userId = req.userId;
-        if (!userId)
+        if (!userId) {
             return res.status(401).json({ message: "Usuário não autenticado" });
+        }
+        // -------------------------------
+        // Verificações de consistência
+        // -------------------------------
+        if (!title || !description || !amount || !value) {
+            return res
+                .status(400)
+                .json({
+                message: "Todos os campos obrigatórios devem ser preenchidos.",
+            });
+        }
+        if (isNaN(Number(amount)) || Number(amount) < 0) {
+            return res.status(400).json({ message: "Quantidade inválida." });
+        }
+        if (isNaN(Number(value)) || Number(value) < 0) {
+            return res.status(400).json({ message: "Valor inválido." });
+        }
+        // Evitar produtos duplicados do mesmo usuário com o mesmo título
+        const productExists = await Product_1.default.findOne({ title, user: userId });
+        if (productExists) {
+            return res
+                .status(400)
+                .json({ message: "Você já possui um produto com este título." });
+        }
+        // -------------------------------
+        // Upload de imagem (se enviada)
+        // -------------------------------
         let imageUrl;
         if (req.file) {
             const fileName = `products/${Date.now()}-${req.file.originalname}`;
@@ -76,6 +101,9 @@ router.post("/", upload_1.upload.single("image"), async (req, res) => {
             await file.makePublic();
             imageUrl = `https://storage.googleapis.com/${firebase_1.bucket.name}/${fileName}`;
         }
+        // -------------------------------
+        // Criar produto
+        // -------------------------------
         const newProduct = new Product_1.default({
             title,
             description,
@@ -91,6 +119,75 @@ router.post("/", upload_1.upload.single("image"), async (req, res) => {
     }
     catch (error) {
         res.status(400).json({ message: error.message });
+    }
+});
+// -------------------------------
+// Rota: Atualizar produto
+// -------------------------------
+router.put("/updateProduct/:id", upload_1.upload.single("image"), async (req, res) => {
+    try {
+        const { title, description, amount, value } = req.body;
+        const userId = req.userId;
+        if (!userId) {
+            return res.status(401).json({ message: "Usuário não autenticado" });
+        }
+        const product = await Product_1.default.findOne({
+            _id: req.params.id,
+            user: userId,
+        });
+        if (!product) {
+            return res.status(404).json({ message: "Produto não encontrado." });
+        }
+        // -------------------------------
+        // Verificações de consistência
+        // -------------------------------
+        if (amount && (isNaN(Number(amount)) || Number(amount) < 0)) {
+            return res.status(400).json({ message: "Quantidade inválida." });
+        }
+        if (value && (isNaN(Number(value)) || Number(value) < 0)) {
+            return res.status(400).json({ message: "Valor inválido." });
+        }
+        if (title) {
+            const productExists = await Product_1.default.findOne({
+                title,
+                user: userId,
+                _id: { $ne: req.params.id }, // ignora o produto atual
+            });
+            if (productExists) {
+                return res
+                    .status(400)
+                    .json({ message: "Você já possui outro produto com este título." });
+            }
+        }
+        // -------------------------------
+        // Upload de imagem (se enviada)
+        // -------------------------------
+        let imageUrl = product.image;
+        if (req.file) {
+            const fileName = `products/${Date.now()}-${req.file.originalname}`;
+            const file = firebase_1.bucket.file(fileName);
+            await file.save(req.file.buffer, {
+                metadata: { contentType: req.file.mimetype },
+            });
+            await file.makePublic();
+            imageUrl = `https://storage.googleapis.com/${firebase_1.bucket.name}/${fileName}`;
+        }
+        // -------------------------------
+        // Atualizar produto
+        // -------------------------------
+        product.title = title ?? product.title;
+        product.description = description ?? product.description;
+        product.amount = amount ? Number(amount) : product.amount;
+        product.value = value ? Number(value) : product.value;
+        product.image = imageUrl;
+        await product.save();
+        res.status(200).json({
+            message: "Produto atualizado com sucesso!",
+            product,
+        });
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
     }
 });
 exports.default = router;
