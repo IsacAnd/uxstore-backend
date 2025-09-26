@@ -24,6 +24,9 @@ router.get("/getProductById/:id", async (req, res) => {
         if (!product) {
             return res.status(404).json({ message: "Produto não encontrado." });
         }
+        if (product.user.toString() !== req.userId) {
+            return res.status(403).json({ message: "Acesso negado" });
+        }
         res.status(200).json(product);
     }
     catch (error) {
