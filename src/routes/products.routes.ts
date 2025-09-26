@@ -30,7 +30,7 @@ interface ProductRequest extends Request {
 }
 
 // -------------------------------
-// Rota: Buscar produto por id
+// Rota: Buscar produto por id (só o dono pode ver)
 // -------------------------------
 router.get(
   "/getProductById/:id",
@@ -41,14 +41,12 @@ router.get(
     try {
       const { id } = req.params;
 
-      const product = await Product.findById(id);
+      const product = await Product.findOne({ _id: id, user: req.userId });
 
       if (!product) {
-        return res.status(404).json({ message: "Produto não encontrado." });
-      }
-
-      if (product.user.toString() !== req.userId) {
-        return res.status(403).json({ message: "Acesso negado" });
+        return res
+          .status(404)
+          .json({ message: "Produto não encontrado ou acesso negado." });
       }
 
       res.status(200).json(product);
@@ -59,7 +57,7 @@ router.get(
 );
 
 // -------------------------------
-// Rota: Buscar todos os produtos por usuário
+// Rota: Buscar todos os produtos por usuário (só o dono vê os dele)
 // -------------------------------
 router.get(
   "/getAllProductsByUser",
@@ -77,7 +75,7 @@ router.get(
 );
 
 // -------------------------------
-// Rota: Buscar todos os produtos
+// Rota: Buscar todos os produtos (público)
 // -------------------------------
 router.get(
   "/getAll",
@@ -95,7 +93,7 @@ router.get(
 );
 
 // -------------------------------
-// Rota: Deletar produto
+// Rota: Deletar produto (só dono)
 // -------------------------------
 router.delete(
   "/deleteProduct/:id",
@@ -109,8 +107,11 @@ router.delete(
         user: req.userId,
       });
 
-      if (!deleted)
-        return res.status(404).json({ error: "Produto não encontrado." });
+      if (!deleted) {
+        return res
+          .status(404)
+          .json({ error: "Produto não encontrado ou acesso negado." });
+      }
 
       res.status(200).json({ message: "Produto deletado com sucesso." });
     } catch (error: any) {
@@ -120,7 +121,7 @@ router.delete(
 );
 
 // -------------------------------
-// Rota: Criar produto com imagem
+// Rota: Criar produto (sempre atrelado ao usuário)
 // -------------------------------
 router.post(
   "/createProduct",
@@ -134,9 +135,7 @@ router.post(
         return res.status(401).json({ message: "Usuário não autenticado" });
       }
 
-      // -------------------------------
       // Verificações de consistência
-      // -------------------------------
       if (!title || !description || !amount || !value) {
         return res.status(400).json({
           message: "Todos os campos obrigatórios devem ser preenchidos.",
@@ -151,7 +150,6 @@ router.post(
         return res.status(400).json({ message: "Valor inválido." });
       }
 
-      // Evitar produtos duplicados do mesmo usuário com o mesmo título
       const productExists = await Product.findOne({ title, user: userId });
       if (productExists) {
         return res
@@ -159,9 +157,7 @@ router.post(
           .json({ message: "Você já possui um produto com este título." });
       }
 
-      // -------------------------------
       // Upload de imagem (se enviada)
-      // -------------------------------
       let imageUrl: string | undefined;
       if (req.file) {
         const fileName = `products/${Date.now()}-${req.file.originalname}`;
@@ -175,9 +171,7 @@ router.post(
         imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
       }
 
-      // -------------------------------
       // Criar produto
-      // -------------------------------
       const newProduct = new Product({
         title,
         description,
@@ -198,7 +192,7 @@ router.post(
 );
 
 // -------------------------------
-// Rota: Atualizar produto
+// Rota: Atualizar produto (só dono)
 // -------------------------------
 router.put(
   "/updateProduct/:id",
@@ -221,12 +215,12 @@ router.put(
       });
 
       if (!product) {
-        return res.status(404).json({ message: "Produto não encontrado." });
+        return res
+          .status(404)
+          .json({ message: "Produto não encontrado ou acesso negado." });
       }
 
-      // -------------------------------
-      // Verificações de consistência
-      // -------------------------------
+      // Verificações
       if (amount && (isNaN(Number(amount)) || Number(amount) < 0)) {
         return res.status(400).json({ message: "Quantidade inválida." });
       }
@@ -239,7 +233,7 @@ router.put(
         const productExists = await Product.findOne({
           title,
           user: userId,
-          _id: { $ne: req.params.id }, // ignora o produto atual
+          _id: { $ne: req.params.id },
         });
 
         if (productExists) {
@@ -249,9 +243,7 @@ router.put(
         }
       }
 
-      // -------------------------------
       // Upload de imagem (se enviada)
-      // -------------------------------
       let imageUrl = product.image;
       if (req.file) {
         const fileName = `products/${Date.now()}-${req.file.originalname}`;
@@ -265,9 +257,7 @@ router.put(
         imageUrl = `https://storage.googleapis.com/${bucket.name}/${fileName}`;
       }
 
-      // -------------------------------
       // Atualizar produto
-      // -------------------------------
       product.title = title ?? product.title;
       product.description = description ?? product.description;
       product.amount = amount ? Number(amount) : product.amount;
