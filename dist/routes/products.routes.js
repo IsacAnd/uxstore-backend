@@ -15,6 +15,22 @@ const router = express_1.default.Router();
 // -------------------------------
 router.use(authMiddleware_1.default);
 // -------------------------------
+// Rota: Buscar produto por id
+// -------------------------------
+router.get("/getProductById/:id", async (req, res) => {
+    try {
+        const { id } = req.params;
+        const product = await Product_1.default.findById(id);
+        if (!product) {
+            return res.status(404).json({ message: "Produto não encontrado." });
+        }
+        res.status(200).json(product);
+    }
+    catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+// -------------------------------
 // Rota: Buscar todos os produtos por usuário
 // -------------------------------
 router.get("/getAllProductsByUser", async (req, res) => {
@@ -41,7 +57,7 @@ router.get("/getAll", async (req, res) => {
 // -------------------------------
 // Rota: Deletar produto
 // -------------------------------
-router.delete("/delete/:id", async (req, res) => {
+router.delete("/deleteProduct/:id", async (req, res) => {
     try {
         const deleted = await Product_1.default.findOneAndDelete({
             _id: req.params.id,
@@ -69,9 +85,7 @@ router.post("/createProduct", upload_1.upload.single("image"), async (req, res) 
         // Verificações de consistência
         // -------------------------------
         if (!title || !description || !amount || !value) {
-            return res
-                .status(400)
-                .json({
+            return res.status(400).json({
                 message: "Todos os campos obrigatórios devem ser preenchidos.",
             });
         }

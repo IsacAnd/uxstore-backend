@@ -30,6 +30,31 @@ interface ProductRequest extends Request {
 }
 
 // -------------------------------
+// Rota: Buscar produto por id
+// -------------------------------
+router.get(
+  "/getProductById/:id",
+  async (
+    req: AuthenticatedRequest & { params: { id: string } },
+    res: Response<IProduct | { message: string }>
+  ) => {
+    try {
+      const { id } = req.params;
+
+      const product = await Product.findById(id);
+
+      if (!product) {
+        return res.status(404).json({ message: "Produto não encontrado." });
+      }
+
+      res.status(200).json(product);
+    } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  }
+);
+
+// -------------------------------
 // Rota: Buscar todos os produtos por usuário
 // -------------------------------
 router.get(
@@ -69,7 +94,7 @@ router.get(
 // Rota: Deletar produto
 // -------------------------------
 router.delete(
-  "/delete/:id",
+  "/deleteProduct/:id",
   async (
     req: AuthenticatedRequest & { params: { id: string } },
     res: Response<{ message?: string; error?: string }>
@@ -109,11 +134,9 @@ router.post(
       // Verificações de consistência
       // -------------------------------
       if (!title || !description || !amount || !value) {
-        return res
-          .status(400)
-          .json({
-            message: "Todos os campos obrigatórios devem ser preenchidos.",
-          });
+        return res.status(400).json({
+          message: "Todos os campos obrigatórios devem ser preenchidos.",
+        });
       }
 
       if (isNaN(Number(amount)) || Number(amount) < 0) {
