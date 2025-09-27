@@ -4,6 +4,7 @@ import Product, { IProduct } from "../models/Product";
 import authMiddleware from "../middleware/authMiddleware";
 import { upload } from "../middleware/upload";
 import { bucket } from "../firebase";
+import mongoose from "mongoose";
 
 const router = express.Router();
 
@@ -41,7 +42,9 @@ router.get(
     try {
       const { id } = req.params;
 
-      const product = await Product.findOne({ _id: id, user: req.userId });
+      const product = await Product.findById({
+        _id: id,
+      });
 
       if (!product) {
         return res

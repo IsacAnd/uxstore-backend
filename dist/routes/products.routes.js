@@ -20,7 +20,9 @@ router.use(authMiddleware_1.default);
 router.get("/getProductById/:id", async (req, res) => {
     try {
         const { id } = req.params;
-        const product = await Product_1.default.findOne({ _id: id, user: req.userId });
+        const product = await Product_1.default.findById({
+            _id: id,
+        });
         if (!product) {
             return res
                 .status(404)
