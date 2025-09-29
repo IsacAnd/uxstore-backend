@@ -35,6 +35,8 @@ router.post(
   ) => {
     const { cpf, completeName, email, phone, password } = req.body;
 
+    console.log(cpf, completeName, email, phone, password);
+
     try {
       if (!cpf || !completeName || !email || !phone || !password) {
         return res
