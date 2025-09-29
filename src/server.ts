@@ -14,15 +14,7 @@ const port = process.env.PORT;
 
 connectDatabase();
 
-app.use(
-  cors({
-    origin: [
-      "http://localhost:3000",
-      "https://uxstore-frontend.vercel.app",
-      "https://uxstore-frontend-git-main-isacands-projects.vercel.app",
-    ],
-  })
-);
+app.use(cors());
 app.use(express.json());
 app.use("/api/products", transactionRoutes);
 app.use("/api/auth", authRoutes);
