@@ -36,13 +36,11 @@ Object.defineProperty(exports, "__esModule", { value: true });
 // user.model.ts
 const mongoose_1 = __importStar(require("mongoose"));
 const userSchema = new mongoose_1.default.Schema({
-    cpf: { type: String, required: true },
-    completeName: { type: String, required: true, unique: true },
+    cpf: { type: String, required: true, unique: true },
+    completeName: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     phone: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    isVerified: { type: Boolean, default: false },
-    emailToken: { type: String },
 });
 const User = (0, mongoose_1.model)("User", userSchema);
 exports.default = User;
